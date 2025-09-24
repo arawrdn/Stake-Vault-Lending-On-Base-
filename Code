@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Vault is Ownable {
+    IERC20 public stakingToken;
+    mapping(address => uint256) public balances;
+
+    uint256 public rewardRate = 10; // 10% per simple example
+
+    event Staked(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+
+    constructor(address _token) {
+        stakingToken = IERC20(_token);
+    }
+
+    function stake(uint256 _amount) external {
+        require(_amount > 0, "Amount > 0");
+        stakingToken.transferFrom(msg.sender, address(this), _amount);
+        balances[msg.sender] += _amount;
+        emit Staked(msg.sender, _amount);
+    }
+
+    function withdraw(uint256 _amount) external {
+        require(balances[msg.sender] >= _amount, "Insufficient balance");
+        uint256 reward = (_amount * rewardRate) / 100;
+        balances[msg.sender] -= _amount;
+        stakingToken.transfer(msg.sender, _amount + reward);
+        emit Withdrawn(msg.sender, _amount + reward);
+    }
+}
